@@ -364,9 +364,10 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .todo-add .add-btn:active { transform: scale(.94); }
 .todo-empty { color: var(--muted); font-size: 12.5px; padding: 12px 4px; text-align: center; }
 
-/* Todo layout: scrollable body of loose tasks + project folders */
-.card--todo .card-body { display: flex; flex-direction: column; overflow: hidden; }
-.todo-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+/* Todo layout: the card body is one scroll container (both axes), so every task,
+   folder name and the footer stays reachable by scrolling when the card is small. */
+.card--todo .card-body { overflow: auto; }
+.todo-scroll { display: flex; flex-direction: column; gap: 8px; }
 .todo-loose { display: flex; flex-direction: column; gap: 6px; min-height: 8px; }
 .todo-loose.drop-end::after, .folder-items.drop-end::after {
   content: ''; display: block; height: 2.5px; border-radius: 2px; background: var(--accent); margin: 4px 2px 0;
@@ -375,7 +376,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .todo-folder {
   border: 1px solid var(--border); border-radius: 12px;
   background: color-mix(in srgb, var(--tint) 55%, #fff);
-  overflow: hidden;
+  overflow: visible; /* let long folder names extend; the card body scrolls to them */
 }
 .todo-folder.dragging-folder { opacity: .5; }
 /* Unified top-level insertion line (folders + loose tasks ordered together). */
@@ -397,7 +398,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   margin-right: auto;
   font-family: inherit; font-size: 13px; font-weight: 700; color: var(--accent-ink);
   background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 1px 5px;
-  field-sizing: content; min-width: 50px; max-width: 60%; outline: none;
+  field-sizing: content; min-width: 50px; flex-shrink: 0; outline: none;
 }
 .folder-name:hover { background: rgba(255, 255, 255, .5); }
 .folder-name:focus { background: #fff; border-color: var(--accent); }
@@ -514,3 +515,47 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 }
 .swatch:hover { transform: scale(1.15); }
 .swatch-none { background: #fff; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
+
+/* ---------- History (recently closed) ---------- */
+#history-btn { gap: 5px; }
+#history-panel {
+  position: fixed;
+  z-index: 1000;
+  width: 280px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: 0 16px 44px rgba(150, 120, 160, 0.3);
+  padding: 8px;
+}
+#history-panel[hidden] { display: none; }
+.hp-head { font-weight: 800; font-size: 12px; color: var(--muted); padding: 6px 8px; letter-spacing: .3px; }
+.hp-empty { color: var(--muted); font-size: 13px; padding: 10px 8px; text-align: center; }
+.hp-item {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%;
+  background: transparent; border: none; border-radius: 11px;
+  padding: 9px 10px; cursor: pointer; text-align: left;
+  font-family: inherit;
+  transition: background .14s ease;
+}
+.hp-item:hover { background: var(--tint); }
+.hp-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+.hp-name {
+  flex: 1; min-width: 0;
+  font-size: 13.5px; font-weight: 700; color: var(--accent-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hp-meta {
+  font-size: 11px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+}
+.hp-clear {
+  width: 100%; margin-top: 4px;
+  background: transparent; border: none; border-radius: 10px;
+  padding: 8px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600;
+  color: var(--muted);
+}
+.hp-clear:hover { background: #f5f0f7; color: var(--danger); }

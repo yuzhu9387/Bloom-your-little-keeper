@@ -1,4 +1,7 @@
-import { getState, loadState, addWidget, removeWidget, newId, scheduleSave } from './store.js';
+import {
+  getState, loadState, addWidget, closeWidget, getClosed, restoreClosed, clearClosed,
+  newId, scheduleSave, flushSave, undo, redo
+} from './store.js';
 import { makeInteractive, bringToFront } from './canvas.js';
 import { renderTodo, todoDefaults } from './widgets/todo.js';
 import { renderCountdown, countdownDefaults } from './widgets/countdown-date.js';
@@ -17,7 +20,7 @@ const REGISTRY = {
 // Build the card chrome (header + body + resize handle) and mount its widget.
 function mountCard(widget) {
   const spec = REGISTRY[widget.type];
-  if (!spec) return;
+  if (!spec) return null;
 
   const card = document.createElement('div');
   card.className = 'card card--' + widget.type;
@@ -26,37 +29,34 @@ function mountCard(widget) {
   const head = document.createElement('div');
   head.className = 'card-head';
 
-  // Editable name — a compact input that auto-sizes to its text. Click to edit.
   const defaultName = spec.defaults().title;
   const title = document.createElement('input');
   title.className = 'title-input';
   title.spellcheck = true;
   title.setAttribute('aria-label', 'Card name');
   title.value = widget.data.title || defaultName;
-  title.size = Math.max(title.value.length, 4); // fallback sizing when field-sizing is unsupported
+  title.size = Math.max(title.value.length, 4);
   title.addEventListener('input', () => {
     title.size = Math.max(title.value.length, 4);
     widget.data.title = title.value.trim() || defaultName;
     scheduleSave();
   });
-  title.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') title.blur();
-  });
+  title.addEventListener('keydown', (e) => { if (e.key === 'Enter') title.blur(); });
   title.addEventListener('blur', () => {
     if (!title.value.trim()) { title.value = defaultName; title.size = defaultName.length; }
   });
 
-  // Spacer fills the rest of the header so the card still drags from there.
   const fill = document.createElement('div');
   fill.className = 'title-fill';
 
   const close = document.createElement('button');
   close.className = 'close';
   close.textContent = '✕';
-  close.title = 'Remove card';
+  close.title = 'Close (recover from History)';
   close.addEventListener('click', () => {
     card.remove();
-    removeWidget(widget.id);
+    closeWidget(widget.id); // moves to History instead of destroying
+    refreshHistory();
   });
   head.append(title, fill, close);
 
@@ -72,17 +72,21 @@ function mountCard(widget) {
   card.addEventListener('mousedown', () => bringToFront(card));
   makeInteractive(card, widget.id, widget);
 
-  // Widgets call this to set their name; skip while the user is editing it.
   const onTitle = (t) => {
     if (document.activeElement !== title) { title.value = t; title.size = Math.max(t.length, 4); }
   };
-  // Expose a re-render hook so other cards can refresh this one (e.g. a todo
-  // task dragged from another list).
   card.__rerender = () => spec.render(body, widget, onTitle);
   card.__rerender();
+  return card;
 }
 
-// Place a new card near the top-left with a slight cascade so they don't stack.
+// Re-mount every card from the (possibly restored) state — used after undo/redo.
+function rebuildAll() {
+  canvas.innerHTML = '';
+  getState().widgets.forEach(mountCard);
+}
+
+// ---------- Spawn ----------
 let spawnOffset = 0;
 function spawn(type) {
   const spec = REGISTRY[type];
@@ -90,21 +94,134 @@ function spawn(type) {
   const widget = {
     id: newId(),
     type,
-    x: 40 + spawnOffset,
-    y: 40 + spawnOffset,
+    x: 40 + spawnOffset + canvas.scrollLeft,
+    y: 40 + spawnOffset + canvas.scrollTop,
     w: spec.w,
     h: spec.h,
     data: spec.defaults()
   };
   addWidget(widget);
-  mountCard(widget);
+  const card = mountCard(widget);
+  if (card) bringToFront(card);
 }
 
 document.querySelectorAll('#toolbar button[data-add]').forEach((btn) => {
   btn.addEventListener('click', () => spawn(btn.dataset.add));
 });
 
-// Boot: restore saved widgets.
+// ---------- History (recently closed cards) ----------
+const historyBtn = document.getElementById('history-btn');
+const historyPanel = document.getElementById('history-panel');
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function describe(w) {
+  const d = w.data || {};
+  if (w.type === 'todo') {
+    const n = Array.isArray(d.nodes) ? d.nodes : [];
+    const folders = n.filter((x) => x.type === 'folder');
+    const loose = n.filter((x) => x.type === 'todo').length;
+    const inFolders = folders.reduce((a, x) => a + (x.items ? x.items.length : 0), 0);
+    return `${folders.length} folders · ${loose + inFolders} tasks`;
+  }
+  if (w.type === 'note') {
+    const txt = (d.html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return txt ? txt.slice(0, 28) : 'empty note';
+  }
+  if (w.type === 'countdown') return d.date || 'no date set';
+  if (w.type === 'timer') return (d.minutes || 0) + ' min timer';
+  return '';
+}
+
+function renderHistory() {
+  const closed = getClosed();
+  historyPanel.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'hp-head';
+  head.textContent = 'Recently closed';
+  historyPanel.appendChild(head);
+
+  if (closed.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'hp-empty';
+    empty.textContent = 'Nothing closed yet.';
+    historyPanel.appendChild(empty);
+    return;
+  }
+
+  closed.forEach((w) => {
+    const row = document.createElement('button');
+    row.className = 'hp-item card--' + w.type;
+    const name = (w.data && w.data.title) ? w.data.title : w.type;
+    row.innerHTML =
+      `<span class="hp-dot"></span>` +
+      `<span class="hp-name">${escapeHtml(name)}</span>` +
+      `<span class="hp-meta">${escapeHtml(describe(w))}</span>`;
+    row.title = 'Click to reopen';
+    row.addEventListener('click', () => {
+      const widget = restoreClosed(w.id);
+      if (widget) {
+        const card = mountCard(widget);
+        if (card) bringToFront(card);
+      }
+      renderHistory();
+      if (getClosed().length === 0) hideHistory();
+    });
+    historyPanel.appendChild(row);
+  });
+
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'hp-clear';
+  clearBtn.textContent = 'Clear history';
+  clearBtn.addEventListener('click', () => { clearClosed(); renderHistory(); hideHistory(); });
+  historyPanel.appendChild(clearBtn);
+}
+
+function positionHistory() {
+  const r = historyBtn.getBoundingClientRect();
+  historyPanel.style.top = (r.bottom + 8) + 'px';
+  historyPanel.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+}
+function showHistory() { renderHistory(); positionHistory(); historyPanel.hidden = false; }
+function hideHistory() { historyPanel.hidden = true; }
+function refreshHistory() { if (!historyPanel.hidden) renderHistory(); }
+
+historyBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (historyPanel.hidden) showHistory(); else hideHistory();
+});
+document.addEventListener('click', (e) => {
+  if (!historyPanel.hidden && !historyPanel.contains(e.target) && e.target !== historyBtn) hideHistory();
+});
+
+// ---------- Undo / redo (Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z, Ctrl+Y) ----------
+function isEditable(el) {
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+}
+document.addEventListener('keydown', (e) => {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod || isEditable(e.target)) return; // let native undo run inside fields/notes
+  const k = e.key.toLowerCase();
+  if (k === 'z') {
+    e.preventDefault();
+    if (e.shiftKey ? redo() : undo()) { rebuildAll(); refreshHistory(); }
+  } else if (k === 'y') {
+    e.preventDefault();
+    if (redo()) { rebuildAll(); refreshHistory(); }
+  }
+});
+
+// ---------- Persist on quit / reload ----------
+window.addEventListener('beforeunload', () => flushSave());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushSave();
+});
+
+// ---------- Boot ----------
 loadState().then(() => {
   getState().widgets.forEach(mountCard);
 });

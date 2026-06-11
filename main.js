@@ -66,6 +66,10 @@ ipcMain.handle('store:save', (_e, data) => {
   saveData(data);
   return true;
 });
+// Synchronous save (flush before quit/reload) — blocks the renderer until written.
+ipcMain.on('store:save-sync', (e, data) => {
+  try { saveData(data); e.returnValue = true; } catch { e.returnValue = false; }
+});
 
 app.whenReady().then(() => {
   // Show the Bloom flower in the Dock during development (packaged builds use icon.icns).
