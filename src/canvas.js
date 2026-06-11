@@ -38,8 +38,6 @@ export function makeInteractive(el, id, frame) {
 
     const startX = e.clientX, startY = e.clientY;
     const baseX = el.offsetLeft, baseY = el.offsetTop;
-    const maxX = Math.max(0, canvas.clientWidth - el.offsetWidth);
-    const maxY = Math.max(0, canvas.clientHeight - el.offsetHeight);
 
     let curX = baseX, curY = baseY;
     let raf = null;
@@ -48,9 +46,10 @@ export function makeInteractive(el, id, frame) {
       raf = null;
       el.style.transform = `translate(${curX - baseX}px, ${curY - baseY}px)`;
     };
+    // Only clamp against the origin; the canvas scrolls, so there's no far edge.
     const move = (ev) => {
-      curX = clamp(baseX + (ev.clientX - startX), 0, maxX);
-      curY = clamp(baseY + (ev.clientY - startY), 0, maxY);
+      curX = Math.max(0, baseX + (ev.clientX - startX));
+      curY = Math.max(0, baseY + (ev.clientY - startY));
       if (raf == null) raf = requestAnimationFrame(apply);
     };
     const up = () => {
@@ -77,8 +76,6 @@ export function makeInteractive(el, id, frame) {
 
     const startX = e.clientX, startY = e.clientY;
     const baseW = el.offsetWidth, baseH = el.offsetHeight;
-    const maxW = canvas.clientWidth - el.offsetLeft;
-    const maxH = canvas.clientHeight - el.offsetTop;
 
     let curW = baseW, curH = baseH;
     let raf = null;
@@ -88,9 +85,10 @@ export function makeInteractive(el, id, frame) {
       el.style.width = curW + 'px';
       el.style.height = curH + 'px';
     };
+    // Only enforce a minimum size; cards may grow past the viewport (scrollable).
     const move = (ev) => {
-      curW = clamp(baseW + (ev.clientX - startX), MIN_W, maxW);
-      curH = clamp(baseH + (ev.clientY - startY), MIN_H, maxH);
+      curW = Math.max(MIN_W, baseW + (ev.clientX - startX));
+      curH = Math.max(MIN_H, baseH + (ev.clientY - startY));
       if (raf == null) raf = requestAnimationFrame(apply);
     };
     const up = () => {
