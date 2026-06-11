@@ -1,0 +1,56 @@
+<svg width="1200" height="440" viewBox="0 0 1200 440" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fdeef5"/>
+      <stop offset="0.5" stop-color="#efeafb"/>
+      <stop offset="1" stop-color="#e6f6ee"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fce6f0"/>
+      <stop offset="0.5" stop-color="#ece2fb"/>
+      <stop offset="1" stop-color="#def4ea"/>
+    </linearGradient>
+    <linearGradient id="wm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f29bc0"/>
+      <stop offset="0.55" stop-color="#b79ce6"/>
+      <stop offset="1" stop-color="#6fc7a3"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="440" rx="44" fill="url(#page)"/>
+
+  <rect x="96" y="90" width="260" height="260" rx="58" fill="url(#tile)"/>
+  <rect x="97.5" y="91.5" width="257" height="257" rx="56.5" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="2"/>
+  <g transform="rotate(0 226 220)"><ellipse cx="226" cy="150" rx="19" ry="50" fill="#ffe1a8"/></g>
+  <g transform="rotate(90 226 220)"><ellipse cx="226" cy="150" rx="19" ry="50" fill="#ffe1a8"/></g>
+  <g transform="rotate(180 226 220)"><ellipse cx="226" cy="150" rx="19" ry="50" fill="#ffe1a8"/></g>
+  <g transform="rotate(270 226 220)"><ellipse cx="226" cy="150" rx="19" ry="50" fill="#ffe1a8"/></g>
+  <g transform="rotate(45 226 220)"><ellipse cx="226" cy="154" rx="34" ry="64" fill="#74c8a3"/></g>
+  <g transform="rotate(135 226 220)"><ellipse cx="226" cy="154" rx="34" ry="64" fill="#f4a585"/></g>
+  <g transform="rotate(225 226 220)"><ellipse cx="226" cy="154" rx="34" ry="64" fill="#bda0ea"/></g>
+  <g transform="rotate(315 226 220)"><ellipse cx="226" cy="154" rx="34" ry="64" fill="#f4a2c6"/></g>
+  <circle cx="226" cy="220" r="33" fill="#ffffff"/>
+  <circle cx="226" cy="220" r="16" fill="#f6b04a"/>
+  <circle cx="219" cy="213" r="5" fill="#ffd98a"/>
+
+  <text x="420" y="205" font-family="'SF Pro Rounded', ui-rounded, 'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif" font-size="104" font-weight="800" fill="url(#wm)">Bloom</text>
+  <text x="426" y="256" font-family="'SF Pro Rounded', ui-rounded, 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="500" fill="#9a93a6">your little keeper · a calm desktop dashboard</text>
+
+  <g font-family="'SF Pro Rounded', ui-rounded, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600">
+    <rect x="424" y="296" width="120" height="44" rx="22" fill="#e7f6ef"/>
+    <circle cx="448" cy="318" r="6" fill="#6fc7a3"/>
+    <text x="464" y="325" fill="#3c9b76">Todo</text>
+
+    <rect x="558" y="296" width="170" height="44" rx="22" fill="#fdeee6"/>
+    <circle cx="582" cy="318" r="6" fill="#f3a07f"/>
+    <text x="598" y="325" fill="#d9744f">Countdown</text>
+
+    <rect x="742" y="296" width="124" height="44" rx="22" fill="#efe8fb"/>
+    <circle cx="766" cy="318" r="6" fill="#b79ce6"/>
+    <text x="782" y="325" fill="#8158c4">Timer</text>
+
+    <rect x="880" y="296" width="112" height="44" rx="22" fill="#fdeaf2"/>
+    <circle cx="904" cy="318" r="6" fill="#f29bc0"/>
+    <text x="920" y="325" fill="#d56497">Note</text>
+  </g>
+</svg>

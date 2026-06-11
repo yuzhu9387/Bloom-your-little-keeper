@@ -20,10 +20,8 @@ export function makeInteractive(el, id, frame) {
   head.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('.close')) return;
-    // The whole header drags. Only skip when the title is actively being edited
-    // (so you can place the cursor / select text inside it).
-    const t = e.target.closest('.title');
-    if (t && t.isContentEditable) return;
+    // Clicking the name input edits it; the rest of the header drags the card.
+    if (e.target.closest('.title-input')) return;
     startDrag(e);
   });
   handle.addEventListener('pointerdown', (e) => {

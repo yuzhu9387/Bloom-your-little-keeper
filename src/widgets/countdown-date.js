@@ -23,18 +23,6 @@ export function renderCountdown(body, widget, onTitle) {
   onTitle(d.title);
   body.innerHTML = '';
 
-  // Title — prominent and editable here; mirrors the card header.
-  const titleInput = document.createElement('input');
-  titleInput.className = 'cd-title';
-  titleInput.placeholder = 'Event name…';
-  titleInput.spellcheck = true;
-  titleInput.value = d.title === 'Countdown' ? '' : d.title;
-  titleInput.addEventListener('input', () => {
-    d.title = titleInput.value.trim() || 'Countdown';
-    onTitle(d.title);
-    scheduleSave();
-  });
-
   const display = document.createElement('div');
   display.className = 'cd-display';
   const num = document.createElement('div');
@@ -50,7 +38,7 @@ export function renderCountdown(body, widget, onTitle) {
   dateInput.value = d.date || '';
   dateRow.appendChild(dateInput);
 
-  body.append(titleInput, display, dateRow);
+  body.append(display, dateRow);
 
   const renderDisplay = () => {
     const n = daysUntil(d.date);

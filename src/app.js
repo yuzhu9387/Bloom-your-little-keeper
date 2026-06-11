@@ -26,33 +26,29 @@ function mountCard(widget) {
   const head = document.createElement('div');
   head.className = 'card-head';
 
-  // Editable title — double-click to rename (single-click/drag moves the card).
-  const title = document.createElement('span');
-  title.className = 'title';
+  // Editable name — a compact input that auto-sizes to its text. Click to edit.
+  const defaultName = spec.defaults().title;
+  const title = document.createElement('input');
+  title.className = 'title-input';
   title.spellcheck = true;
-  title.title = 'Double-click to rename';
-  title.addEventListener('dblclick', () => {
-    title.contentEditable = 'true';
-    title.classList.add('editing');
-    title.focus();
-    const range = document.createRange();
-    range.selectNodeContents(title);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
+  title.setAttribute('aria-label', 'Card name');
+  title.value = widget.data.title || defaultName;
+  title.size = Math.max(title.value.length, 4); // fallback sizing when field-sizing is unsupported
+  title.addEventListener('input', () => {
+    title.size = Math.max(title.value.length, 4);
+    widget.data.title = title.value.trim() || defaultName;
+    scheduleSave();
   });
   title.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); title.blur(); }
+    if (e.key === 'Enter') title.blur();
   });
-  const commitTitle = () => {
-    const t = title.textContent.trim() || 'Untitled';
-    title.textContent = t;
-    title.contentEditable = 'false';
-    title.classList.remove('editing');
-    widget.data.title = t;
-    scheduleSave();
-  };
-  title.addEventListener('blur', commitTitle);
+  title.addEventListener('blur', () => {
+    if (!title.value.trim()) { title.value = defaultName; title.size = defaultName.length; }
+  });
+
+  // Spacer fills the rest of the header so the card still drags from there.
+  const fill = document.createElement('div');
+  fill.className = 'title-fill';
 
   const close = document.createElement('button');
   close.className = 'close';
@@ -62,7 +58,7 @@ function mountCard(widget) {
     card.remove();
     removeWidget(widget.id);
   });
-  head.append(title, close);
+  head.append(title, fill, close);
 
   const body = document.createElement('div');
   body.className = 'card-body';
@@ -76,8 +72,10 @@ function mountCard(widget) {
   card.addEventListener('mousedown', () => bringToFront(card));
   makeInteractive(card, widget.id, widget);
 
-  // Widgets call this to set their title; skip while the user is editing it.
-  const onTitle = (t) => { if (document.activeElement !== title) title.textContent = t; };
+  // Widgets call this to set their name; skip while the user is editing it.
+  const onTitle = (t) => {
+    if (document.activeElement !== title) { title.value = t; title.size = Math.max(t.length, 4); }
+  };
   spec.render(body, widget, onTitle);
 }
 

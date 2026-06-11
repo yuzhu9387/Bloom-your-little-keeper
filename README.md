@@ -1,49 +1,108 @@
-# Dashboard
+<p align="center">
+  <img src="assets/flyer.png" alt="Bloom — your little keeper" width="820" />
+</p>
 
-A personal desktop dashboard for macOS: a free canvas where you drag and resize
-cards for **todos**, **countdown days**, a **minute timer**, and **notes**.
-State is saved to a local JSON file automatically.
+<h1 align="center">Bloom</h1>
 
-## Run (development)
+<p align="center">
+  <img src="assets/icon.png" alt="Bloom icon" width="96" /><br/>
+  <em>your little keeper</em> — a calm, pastel desktop dashboard for macOS.
+</p>
+
+Bloom is a small Electron app: a free canvas where you drop **draggable, resizable cards**
+for your todos, countdowns, timers, and notes. Everything is auto-saved to a local file,
+so it’s entirely yours — no account, no cloud, no tracking.
+
+---
+
+## ✨ Features
+
+A single canvas, four kinds of cards — add as many of each as you like, then drag and
+resize them anywhere.
+
+| | Card | What it does |
+|---|------|--------------|
+| 🟢 | **Todo** | `Active` / `Done` tabs. Check an item and it plays a strike-through animation, then slides into `Done`. |
+| 🟠 | **Countdown** | Give it a name and a date; it shows the big number of days left (or days ago). |
+| 🟣 | **Timer** | Set minutes, hit start — it counts down `mm:ss` and rings a soft tone when it hits zero. |
+| 🌸 | **Note** | A free-form notepad with light markdown aids: `Tab` to indent, `- ` becomes a `•` bullet, `Enter` continues the list. |
+
+Plus:
+
+- **Rename anything** — every card has a compact name field in its header.
+- **Silky drag & resize** — GPU-accelerated, 60fps pointer dragging.
+- **Spellcheck everywhere** — red underlines and right-click suggestions in every text field.
+- **Local-first storage** — one tidy JSON file, debounced auto-save, nothing leaves your machine.
+
+---
+
+## 🚀 Run it
 
 ```bash
-npm install      # one-time, downloads Electron
-npm start        # opens the app window
+git clone git@github.com:yuzhu9387/Bloom-your-little-keeper.git
+cd Bloom-your-little-keeper
+npm install
+npm start
 ```
 
-## Build a double-clickable Mac app
+### Build a double-clickable Mac app
 
 ```bash
-npm run dist     # produces a .dmg / .app under dist/
+npm run dist     # produces a .dmg / Bloom.app under dist/
 ```
 
-Then drag `Dashboard.app` to Applications and launch it like any Mac app.
+Drag `Bloom.app` into Applications and launch it like any Mac app.
 
-## Cards
+### Regenerate the icon
 
-- **Todo** — `Active` / `Done` tabs. Checking an item plays a strike-through
-  animation, then moves it to `Done`. Add items at the bottom, `Enter` to add.
-- **Countdown** — enter a title and a target date; shows days left (or days ago
-  if past). Recalculated against today.
-- **Timer** — set minutes, `Start` counts down `mm:ss`, rings a tone and blinks
-  when it hits zero. `Pause` / `Reset` available.
-- **Note** — a free-form auto-saving text area.
+The app icon is a vector — edit `assets/icon.svg`, then:
 
-## Storage
-
-Everything (card positions, sizes, content) is one JSON file at:
-
-```
-~/Library/Application Support/architect-desktop-app/data.json
+```bash
+npm run icon     # rebuilds assets/icon.png and assets/icon.icns
 ```
 
-Writes are debounced 500ms after the last change, so nothing is lost on quit.
+---
 
-## Layout
+## 💾 Where your data lives
 
-- `main.js` — Electron main process; window + atomic local-file read/write.
-- `preload.js` — safe `load`/`save` bridge to the renderer.
-- `src/store.js` — in-memory state + debounced persistence.
-- `src/canvas.js` — drag + resize engine (no libraries).
-- `src/widgets/*.js` — one file per card type.
-- `src/app.js` — wires toolbar, card chrome, and widget dispatch.
+All card positions, sizes, and content live in a single JSON file:
+
+```
+~/Library/Application Support/Bloom/data.json
+```
+
+Writes are debounced 500ms after your last change, so nothing is lost on quit.
+
+---
+
+## 🗂 Project layout
+
+```
+Bloom/
+├── main.js            Electron main process — window + atomic local-file read/write + spellcheck menu
+├── preload.js         Safe load/save bridge to the renderer
+├── index.html         Toolbar + canvas
+├── styles.css         The pastel theme
+├── src/
+│   ├── store.js       In-memory state + debounced persistence
+│   ├── canvas.js      Pointer-based drag + resize engine (no libraries)
+│   ├── sound.js       Synthesized timer ring (Web Audio)
+│   ├── app.js         Wires the toolbar, card chrome, and widget dispatch
+│   └── widgets/
+│       ├── todo.js
+│       ├── countdown-date.js
+│       ├── timer.js
+│       └── note.js
+├── assets/            icon.svg / icon.png / icon.icns / flyer
+└── scripts/
+    └── make-icon.mjs  SVG → PNG → .icns icon builder
+```
+
+---
+
+## 🛠 Built with
+
+[Electron](https://www.electronjs.org/) · vanilla HTML/CSS/JS (no framework, no bundler) ·
+[sharp](https://sharp.pixelplumbing.com/) for icon rasterization.
+
+<p align="center"><sub>Made with 🌷</sub></p>
