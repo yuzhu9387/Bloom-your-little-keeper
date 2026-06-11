@@ -1,0 +1,35 @@
+{
+  "name": "architect-desktop-app",
+  "version": "1.0.0",
+  "description": "A personal desktop dashboard: todo, countdown days, timer and notes on a free canvas",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/make-icon.mjs",
+    "dist": "electron-builder --mac"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "sharp": "^0.35.0"
+  },
+  "build": {
+    "appId": "com.bloom.app",
+    "productName": "Bloom",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "src/**/*",
+      "assets/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    }
+  }
+}

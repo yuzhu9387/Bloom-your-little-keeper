@@ -1,0 +1,26 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fce6f0"/>
+      <stop offset="0.5" stop-color="#ece2fb"/>
+      <stop offset="1" stop-color="#def4ea"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="112" y="112" width="800" height="800" rx="180" fill="url(#bg)"/>
+  <rect x="114" y="114" width="796" height="796" rx="178" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="3"/>
+
+  <g transform="rotate(0 512 512)"><ellipse cx="512" cy="362" rx="58" ry="150" fill="#ffe1a8"/></g>
+  <g transform="rotate(90 512 512)"><ellipse cx="512" cy="362" rx="58" ry="150" fill="#ffe1a8"/></g>
+  <g transform="rotate(180 512 512)"><ellipse cx="512" cy="362" rx="58" ry="150" fill="#ffe1a8"/></g>
+  <g transform="rotate(270 512 512)"><ellipse cx="512" cy="362" rx="58" ry="150" fill="#ffe1a8"/></g>
+
+  <g transform="rotate(45 512 512)"><ellipse cx="512" cy="338" rx="104" ry="192" fill="#74c8a3"/></g>
+  <g transform="rotate(135 512 512)"><ellipse cx="512" cy="338" rx="104" ry="192" fill="#f4a585"/></g>
+  <g transform="rotate(225 512 512)"><ellipse cx="512" cy="338" rx="104" ry="192" fill="#bda0ea"/></g>
+  <g transform="rotate(315 512 512)"><ellipse cx="512" cy="338" rx="104" ry="192" fill="#f4a2c6"/></g>
+
+  <circle cx="512" cy="512" r="96" fill="#ffffff"/>
+  <circle cx="512" cy="512" r="46" fill="#f6b04a"/>
+  <circle cx="491" cy="491" r="15" fill="#ffd98a"/>
+</svg>
