@@ -76,7 +76,10 @@ function mountCard(widget) {
   const onTitle = (t) => {
     if (document.activeElement !== title) { title.value = t; title.size = Math.max(t.length, 4); }
   };
-  spec.render(body, widget, onTitle);
+  // Expose a re-render hook so other cards can refresh this one (e.g. a todo
+  // task dragged from another list).
+  card.__rerender = () => spec.render(body, widget, onTitle);
+  card.__rerender();
 }
 
 // Place a new card near the top-left with a slight cascade so they don't stack.
