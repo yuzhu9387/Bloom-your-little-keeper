@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeImage, Menu, MenuItem } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage, Menu, MenuItem, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -70,8 +70,51 @@ ipcMain.handle('store:save', (_e, data) => {
 ipcMain.on('store:save-sync', (e, data) => {
   try { saveData(data); e.returnValue = true; } catch { e.returnValue = false; }
 });
+// Plain clipboard text for the note editor's "paste without formatting" (Cmd+Shift+V).
+ipcMain.on('clipboard:read-text', (e) => { e.returnValue = clipboard.readText(); });
+
+// Custom menu so the app keeps its standard shortcuts, but WITHOUT the native
+// "Paste and Match Style" item — that frees Cmd/Ctrl+Shift+V for the note editor
+// to handle plain-text paste itself (renderer reads the clipboard directly).
+function buildMenu() {
+  const isMac = process.platform === 'darwin';
+  const template = [
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' }, { type: 'separator' },
+        { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' },
+        { type: 'separator' }, { role: 'quit' }
+      ]
+    }] : []),
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+        { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
+        { type: 'separator' }, { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Window',
+      submenu: isMac
+        ? [{ role: 'minimize' }, { role: 'zoom' }, { type: 'separator' }, { role: 'front' }]
+        : [{ role: 'minimize' }, { role: 'zoom' }, { role: 'close' }]
+    }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 
 app.whenReady().then(() => {
+  buildMenu();
   // Show the Bloom flower in the Dock during development (packaged builds use icon.icns).
   if (process.platform === 'darwin' && app.dock && fs.existsSync(ICON_PATH)) {
     app.dock.setIcon(nativeImage.createFromPath(ICON_PATH));

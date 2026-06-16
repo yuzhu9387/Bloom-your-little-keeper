@@ -500,6 +500,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .note-rich ul, .note-rich ol { margin: .2em 0; padding-left: 22px; }
 .note-rich blockquote { margin: 0 0 0 28px; border: none; padding: 0; }
 .note-rich a { color: var(--accent-ink); }
+.note-rich img { display: block; max-width: 100%; height: auto; margin: .4em 0; border-radius: 8px; }
 
 /* Color swatch popover */
 .swatch-pop {

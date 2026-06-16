@@ -122,6 +122,41 @@ export function renderNote(body, widget, onTitle) {
     }
   });
 
+  // Cmd/Ctrl+Shift+V: paste the text value only, stripping all formatting.
+  // We read the clipboard directly (the native "Paste and Match Style" menu item
+  // is removed in main.js so this shortcut reaches us) and insert plain text.
+  editor.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      const text = window.api && window.api.readClipboardText ? window.api.readClipboardText() : '';
+      if (text) {
+        editor.focus();
+        document.execCommand('insertText', false, text);
+        save();
+      }
+    }
+  });
+
+  // Embed images (e.g. a pasted screenshot) inline — contentEditable ignores
+  // raw image clipboard data by default, so we read it and insert an <img>.
+  editor.addEventListener('paste', (e) => {
+    const dt = e.clipboardData;
+    if (!dt) return;
+    const imageItem = Array.from(dt.items).find((it) => it.type.startsWith('image/'));
+    if (!imageItem) return;
+    const file = imageItem.getAsFile();
+    if (!file) return;
+    e.preventDefault();
+    const reader = new FileReader();
+    reader.onload = () => {
+      editor.focus();
+      document.execCommand('insertHTML', false,
+        `<img src="${reader.result}" style="max-width:100%;height:auto;">`);
+      save();
+    };
+    reader.readAsDataURL(file);
+  });
+
   const toolbar = buildToolbar(exec);
   body.append(toolbar, editor);
 }
