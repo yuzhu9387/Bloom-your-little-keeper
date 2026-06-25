@@ -4,6 +4,12 @@ const fs = require('fs');
 
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 
+// Pin ONE data location for both `npm start` and the packaged Bloom.app. Without
+// this, the dev run uses the package name ("architect-desktop-app") while the
+// installed build uses the productName ("Bloom"), so the installed app would
+// start empty. Keep everything in the existing folder so your data carries over.
+app.setPath('userData', path.join(app.getPath('appData'), 'architect-desktop-app'));
+
 const DATA_FILE = path.join(app.getPath('userData'), 'data.json');
 
 function loadData() {
