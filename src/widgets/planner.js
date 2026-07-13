@@ -49,9 +49,16 @@ export function renderPlanner(body, widget, onTitle) {
     grid.appendChild(t);
     for (let day = 0; day < 7; day++) grid.appendChild(renderCell(day, hour));
   }
+
+  // A thin line marking the current time, drawn over today's column at the
+  // exact minute. Positioned from live layout so it stays right as cells grow.
+  const nowLine = document.createElement('div');
+  nowLine.className = 'planner-now-line';
+  grid.appendChild(nowLine);
   body.appendChild(grid);
 
   applyNow();
+  requestAnimationFrame(positionNowLine); // needs layout before it can measure
   // One highlight timer per card body; guard against the card being removed.
   if (body.__nowTimer) clearInterval(body.__nowTimer);
   body.__nowTimer = setInterval(() => {
@@ -82,6 +89,19 @@ export function renderPlanner(body, widget, onTitle) {
     grid.querySelectorAll('.today, .now').forEach((el) => el.classList.remove('today', 'now'));
     grid.querySelectorAll(`[data-day="${day}"]`).forEach((el) => el.classList.add('today'));
     grid.querySelectorAll(`[data-hour="${hour}"]`).forEach((el) => el.classList.add('now'));
+    positionNowLine();
+  }
+
+  // Place the now-line at minute-precision over today's current-hour cell.
+  function positionNowLine() {
+    const now = new Date();
+    const day = (now.getDay() + 6) % 7;
+    const cell = grid.querySelector(`.planner-cell[data-day="${day}"][data-hour="${now.getHours()}"]`);
+    if (!cell) { nowLine.style.display = 'none'; return; }
+    nowLine.style.display = 'block';
+    nowLine.style.left = cell.offsetLeft + 'px';
+    nowLine.style.width = cell.offsetWidth + 'px';
+    nowLine.style.top = (cell.offsetTop + (now.getMinutes() / 60) * cell.offsetHeight) + 'px';
   }
 
   function entriesAt(day, hour) {

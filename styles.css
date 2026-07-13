@@ -370,9 +370,21 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
    the hour column can stick to its edges; padding lives in the cells instead. */
 .card--planner .card-body { padding: 0; overflow: auto; }
 .planner-grid {
+  position: relative;
   display: grid;
   grid-template-columns: 54px repeat(7, minmax(110px, 1fr));
   grid-auto-rows: minmax(36px, auto);
+}
+/* Current-time line: drawn over today's column at minute precision. */
+.planner-now-line {
+  position: absolute; z-index: 1;
+  height: 0; border-top: 2px solid #ef7a66;
+  pointer-events: none;
+}
+.planner-now-line::before {
+  content: ''; position: absolute;
+  left: -3px; top: -4px; width: 7px; height: 7px;
+  border-radius: 50%; background: #ef7a66;
 }
 .planner-corner, .planner-day-head {
   position: sticky; top: 0; z-index: 3;
