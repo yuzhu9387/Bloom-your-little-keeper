@@ -7,6 +7,7 @@ import { renderTodo, todoDefaults } from './widgets/todo.js';
 import { renderCountdown, countdownDefaults } from './widgets/countdown-date.js';
 import { renderTimer, timerDefaults } from './widgets/timer.js';
 import { renderNote, noteDefaults } from './widgets/note.js';
+import { renderPlanner, plannerDefaults } from './widgets/planner.js';
 
 const canvas = document.getElementById('canvas');
 
@@ -14,7 +15,8 @@ const REGISTRY = {
   todo: { render: renderTodo, defaults: todoDefaults, w: 280, h: 340 },
   countdown: { render: renderCountdown, defaults: countdownDefaults, w: 260, h: 230 },
   timer: { render: renderTimer, defaults: timerDefaults, w: 240, h: 220 },
-  note: { render: renderNote, defaults: noteDefaults, w: 280, h: 240 }
+  note: { render: renderNote, defaults: noteDefaults, w: 280, h: 240 },
+  planner: { render: renderPlanner, defaults: plannerDefaults, w: 640, h: 480 }
 };
 
 // Build the card chrome (header + body + resize handle) and mount its widget.
@@ -129,6 +131,11 @@ function describe(w) {
   if (w.type === 'note') {
     const txt = (d.html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return txt ? txt.slice(0, 28) : 'empty note';
+  }
+  if (w.type === 'planner') {
+    const all = Object.values(d.entries || {}).filter(Array.isArray).flat();
+    const tasks = all.filter((e) => e.task).length;
+    return `${all.length} plans · ${tasks} tasks`;
   }
   if (w.type === 'countdown') return d.date || 'no date set';
   if (w.type === 'timer') return (d.minutes || 0) + ' min timer';

@@ -3,6 +3,7 @@
 // reorder, drop them into a folder, or pull them back out; drag folders to
 // reorder among the loose tasks; move either onto another card.
 import { scheduleSave, getWidget } from '../store.js';
+import { renderTaskRow } from './task-row.js';
 
 export const todoDefaults = () => ({
   title: 'Todo',
@@ -332,59 +333,32 @@ export function renderTodo(body, widget, onTitle) {
   }
 
   function renderTask(task, isTop) {
-    const row = document.createElement('div');
-    row.className = 'todo-item' + (task.done ? ' done' : '') + (isTop ? ' top-node' : '');
+    const { row } = renderTaskRow(task, {
+      onToggle: (done) => { task.done = done; scheduleSave(); rerender(); },
+      onEdit: (v) => { task.text = v; scheduleSave(); },
+      onDelete: () => deleteTask(task.id),
+      extraClass: isTop ? 'top-node' : ''
+    });
     row.dataset.itemId = task.id;
     if (isTop) row.dataset.nodeId = task.id;
 
-    const grip = document.createElement('span');
-    grip.className = 'grip';
-    grip.textContent = '⠿';
-    grip.title = 'Drag to reorder, into a project, or to another card';
-    grip.draggable = true;
-    grip.addEventListener('dragstart', (e) => {
-      dragging = { kind: 'todo', fromWidget: widget.id, id: task.id };
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', task.text);
-      e.dataTransfer.setDragImage(row, 12, 16);
-      row.classList.add('dragging-item');
-    });
-    grip.addEventListener('dragend', () => { dragging = null; row.classList.remove('dragging-item'); });
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = task.done;
-    cb.addEventListener('change', () => {
-      if (cb.checked && !task.done) {
-        row.classList.add('striking');
-        const txt = row.querySelector('.text');
-        const finish = () => { task.done = true; scheduleSave(); rerender(); };
-        txt.addEventListener('animationend', finish, { once: true });
-        setTimeout(finish, 700);
-      } else { task.done = cb.checked; scheduleSave(); rerender(); }
-    });
-
-    const text = document.createElement('span');
-    text.className = 'text';
-    text.textContent = task.text;
-    text.contentEditable = 'plaintext-only';
-    text.spellcheck = true;
-    text.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); text.blur(); } });
-    text.addEventListener('blur', () => {
-      const v = text.textContent.trim();
-      if (!v) deleteTask(task.id);
-      else if (v !== task.text) { task.text = v; scheduleSave(); }
-    });
-
-    const del = document.createElement('button');
-    del.className = 'del';
-    del.textContent = '✕';
-    del.title = 'Delete';
-    del.addEventListener('click', () => deleteTask(task.id));
-
     // No dragging in the Done tab — it's a flat, fixed list.
-    if (d.tab === 'active') row.append(grip, cb, text, del);
-    else row.append(cb, text, del);
+    if (d.tab === 'active') {
+      const grip = document.createElement('span');
+      grip.className = 'grip';
+      grip.textContent = '⠿';
+      grip.title = 'Drag to reorder, into a project, or to another card';
+      grip.draggable = true;
+      grip.addEventListener('dragstart', (e) => {
+        dragging = { kind: 'todo', fromWidget: widget.id, id: task.id };
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', task.text);
+        e.dataTransfer.setDragImage(row, 12, 16);
+        row.classList.add('dragging-item');
+      });
+      grip.addEventListener('dragend', () => { dragging = null; row.classList.remove('dragging-item'); });
+      row.prepend(grip);
+    }
     return row;
   }
 }

@@ -225,9 +225,10 @@ html, body {
 .card--countdown { --tint:#fdeee6; --accent:#f3a07f; --accent-ink:#d9744f; }
 .card--timer     { --tint:#efe8fb; --accent:#b79ce6; --accent-ink:#8158c4; }
 .card--note      { --tint:#fdeaf2; --accent:#f29bc0; --accent-ink:#d56497; }
+.card--planner   { --tint:#e6effb; --accent:#8fb8e8; --accent-ink:#4d80bd; }
 
 /* ---------- Scrollbars ---------- */
-.card-body::-webkit-scrollbar { width: 8px; }
+.card-body::-webkit-scrollbar { width: 8px; height: 8px; }
 .card-body::-webkit-scrollbar-thumb { background: rgba(150,120,160,.22); border-radius: 8px; }
 .card-body::-webkit-scrollbar-thumb:hover { background: rgba(150,120,160,.38); }
 
@@ -363,6 +364,89 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .todo-add .add-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .todo-add .add-btn:active { transform: scale(.94); }
 .todo-empty { color: var(--muted); font-size: 12.5px; padding: 12px 4px; text-align: center; }
+
+/* ---------- Weekly planner ---------- */
+/* The card body is the scroll container (both axes) so the day header row and
+   the hour column can stick to its edges; padding lives in the cells instead. */
+.card--planner .card-body { padding: 0; overflow: auto; }
+.planner-grid {
+  display: grid;
+  grid-template-columns: 54px repeat(7, minmax(110px, 1fr));
+  grid-auto-rows: minmax(36px, auto);
+}
+.planner-corner, .planner-day-head {
+  position: sticky; top: 0; z-index: 3;
+  background: color-mix(in srgb, var(--tint) 55%, #fff);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.planner-corner { left: 0; z-index: 4; }
+.planner-day-head {
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  text-align: center; padding: 8px 4px 6px;
+}
+.planner-day-head.today { color: var(--accent-ink); }
+.planner-day-head.today::after { content: ' ●'; font-size: 7px; vertical-align: 2px; }
+.planner-hour {
+  position: sticky; left: 0; z-index: 2;
+  background: #fff;
+  font-size: 10.5px; color: var(--muted);
+  text-align: right; padding: 5px 7px 0 0;
+  border-top: 1px solid rgba(120,100,140,.08);
+}
+.planner-hour.now { color: var(--accent-ink); font-weight: 800; }
+.planner-cell {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 3px;
+  border-top: 1px solid rgba(120,100,140,.08);
+  border-left: 1px solid rgba(120,100,140,.08);
+}
+.planner-cell.today { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.planner-cell.now { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.planner-cell.today.now {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 6px;
+}
+.planner-add {
+  border: none; background: transparent; color: var(--muted);
+  font-size: 12px; line-height: 1; padding: 2px; border-radius: 6px;
+  cursor: pointer; opacity: 0;
+  transition: opacity .15s ease, background .15s ease;
+}
+.planner-cell:hover .planner-add { opacity: .5; }
+.planner-add:hover { opacity: 1; background: rgba(255,255,255,.75); }
+.planner-input {
+  width: 100%; min-width: 0;
+  padding: 4px 7px; font-size: 12px; border-radius: 8px;
+}
+/* Plain (non-task) plan entry */
+.planner-entry {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; line-height: 1.3;
+  background: #fbf9fc; border-radius: 8px; padding: 3px 5px;
+}
+.planner-entry:hover { background: #f5f0f7; }
+.planner-entry .text {
+  flex: 1; min-width: 0; overflow-wrap: anywhere;
+  outline: none; border-radius: 5px; padding: 0 3px;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.planner-entry .text:hover { background: rgba(255,255,255,.6); }
+.planner-entry .text:focus { background: #fff; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+.planner-entry .del {
+  color: var(--muted); cursor: pointer; border: none; background: transparent;
+  font-size: 13px; opacity: 0; transition: opacity .15s ease, color .15s ease;
+}
+.planner-entry:hover .del { opacity: .8; }
+.planner-entry .del:hover { color: var(--danger); }
+/* Task entry: the shared todo row, slimmed down to fit an hour cell */
+.todo-item.planner-task { padding: 3px 5px; gap: 6px; font-size: 12px; border-radius: 8px; }
+.todo-item.planner-task .text { min-width: 0; overflow-wrap: anywhere; padding: 0 3px; }
+.todo-item.planner-task input[type=checkbox] { width: 15px; height: 15px; border-width: 1.5px; border-radius: 5px; }
+.todo-item.planner-task input[type=checkbox]:checked::after {
+  left: 4.5px; top: 1.5px; width: 3.5px; height: 7px; border-width: 0 2px 2px 0;
+}
+.todo-item.planner-task .del { font-size: 13px; }
 
 /* Todo layout: the card body is one scroll container (both axes), so every task,
    folder name and the footer stays reachable by scrolling when the card is small. */
