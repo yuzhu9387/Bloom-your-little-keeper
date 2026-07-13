@@ -10,14 +10,14 @@
 </p>
 
 Bloom is a small Electron app: a free canvas where you drop **draggable, resizable cards**
-for your todos, countdowns, timers, and notes. Everything is auto-saved to a local file,
-so it’s entirely yours — no account, no cloud, no tracking.
+for your todos, countdowns, timers, notes, and a weekly planner. Everything is auto-saved
+to a local file, so it’s entirely yours — no account, no cloud, no tracking.
 
 ---
 
 ## ✨ Features
 
-A single canvas, four kinds of cards — add as many of each as you like, then drag and
+A single canvas, five kinds of cards — add as many of each as you like, then drag and
 resize them anywhere.
 
 | | Card | What it does |
@@ -26,6 +26,7 @@ resize them anywhere.
 | 🟠 | **Countdown** | Give it a name and a date; it shows the big number of days left (or days ago). |
 | 🟣 | **Timer** | Set minutes, hit start — it counts down `mm:ss` and rings a soft tone when it hits zero. |
 | 🌸 | **Note** | A free-form notepad with light markdown aids: `Tab` to indent, `- ` becomes a `•` bullet, `Enter` continues the list. |
+| 🔵 | **Week** | A Mon–Sun timetable, one row per hour. Plan any slot; today’s column and the current hour are highlighted. Start an entry with `/t ` to make it a checkable task (with the same strike-through as Todo). |
 
 Plus:
 
@@ -92,7 +93,9 @@ Bloom/
 │       ├── todo.js
 │       ├── countdown-date.js
 │       ├── timer.js
-│       └── note.js
+│       ├── note.js
+│       ├── planner.js     Weekly Mon–Sun planner grid
+│       └── task-row.js    Shared checkable task row (todo + planner)
 ├── assets/            icon.svg / icon.png / icon.icns / flyer
 └── scripts/
     └── make-icon.mjs  SVG → PNG → .icns icon builder
