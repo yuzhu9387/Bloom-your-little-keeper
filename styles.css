@@ -495,16 +495,6 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   font-size: 13px; line-height: 1.4; border-radius: 8px;
 }
 
-/* Day view: the card fills the canvas area only — below the 56px app toolbar,
-   which stays visible. z-index must beat the inline value set by bringToFront(). */
-.card.fullscreen {
-  position: fixed !important;
-  left: 0 !important; top: 56px !important;
-  width: 100vw !important; height: calc(100vh - 56px) !important;
-  border-radius: 0; z-index: 9999 !important;
-}
-.card.fullscreen .resize-handle { display: none; }
-
 /* Todo layout: the card body is one scroll container (both axes), so every task,
    folder name and the footer stays reachable by scrolling when the card is small. */
 .card--todo .card-body { overflow: auto; }

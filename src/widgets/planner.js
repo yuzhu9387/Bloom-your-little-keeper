@@ -1,5 +1,6 @@
 // Weekly planner card: a task board over a Mon–Sun × hourly grid with two
-// views. Week shows all seven days; Day expands one day fullscreen. Every entry
+// views. Week shows all seven days; Day shows one day, both inside the card's
+// own frame (no fullscreen — the card keeps its size and never covers others). Every entry
 // is a task — check it to clear it from the board (kept in the data file as
 // history), or hit ✕ to delete it for good. Long text is truncated to one line;
 // click it for a popup with the full, editable text.
@@ -43,8 +44,6 @@ export function renderPlanner(body, widget, onTitle) {
   closeDetail(true); // any open popup belongs to the previous render
   body.innerHTML = '';
   body.classList.add('planner-body');
-
-  applyFullscreen();
 
   const days = d.view === 'day' ? [d.selectedDay] : [0, 1, 2, 3, 4, 5, 6];
 
@@ -151,11 +150,6 @@ export function renderPlanner(body, widget, onTitle) {
       scheduleSave(); rerender();
     });
     return b;
-  }
-
-  function applyFullscreen() {
-    const card = body.closest('.card');
-    if (card) card.classList.toggle('fullscreen', d.view === 'day');
   }
 
   function applyNow() {
