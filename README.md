@@ -26,7 +26,7 @@ resize them anywhere.
 | 🟠 | **Countdown** | Give it a name and a date; it shows the big number of days left (or days ago). |
 | 🟣 | **Timer** | Set minutes, hit start — it counts down `mm:ss` and rings a soft tone when it hits zero. |
 | 🌸 | **Note** | A free-form notepad with light markdown aids: `Tab` to indent, `- ` becomes a `•` bullet, `Enter` continues the list. |
-| 🔵 | **Week** | A Mon–Sun timetable, one row per hour. Plan any slot; today’s column and the current hour are highlighted. Start an entry with `/t ` to make it a checkable task (with the same strike-through as Todo). |
+| 🔵 | **Week** | A Mon–Sun task board, one row per hour, with **Week** and fullscreen **Day** views. Every entry is a checkable task; a red line marks the current time. Check a task to clear it from the board (kept in history) or `✕` to delete it for good. Long text shows one line — click it for a popup with the full, editable text. |
 
 Plus:
 

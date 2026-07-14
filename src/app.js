@@ -134,8 +134,8 @@ function describe(w) {
   }
   if (w.type === 'planner') {
     const all = Object.values(d.entries || {}).filter(Array.isArray).flat();
-    const tasks = all.filter((e) => e.task).length;
-    return `${all.length} plans · ${tasks} tasks`;
+    const active = all.filter((e) => !e.done).length;
+    return active === 1 ? '1 task' : `${active} tasks`;
   }
   if (w.type === 'countdown') return d.date || 'no date set';
   if (w.type === 'timer') return (d.minutes || 0) + ' min timer';
