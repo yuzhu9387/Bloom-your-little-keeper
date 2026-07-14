@@ -204,7 +204,36 @@ export function renderPlanner(body, widget, onTitle) {
     add.title = 'Add a task';
     add.addEventListener('click', () => openInput(cell, day, hour, add));
     cell.appendChild(add);
+
+    // Drop target: accept a task dragged from any other cell.
+    cell.addEventListener('dragover', (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      cell.classList.add('planner-drop');
+    });
+    cell.addEventListener('dragleave', () => cell.classList.remove('planner-drop'));
+    cell.addEventListener('drop', (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      cell.classList.remove('planner-drop');
+      moveTask(dragging, day, hour);
+      dragging = null;
+    });
     return cell;
+  }
+
+  // Move a task from its source cell to (day, hour). Appends at the target.
+  function moveTask(drag, day, hour) {
+    const from = entriesAt(drag.day, drag.hour);
+    const i = from.findIndex((t) => t.id === drag.id);
+    if (i < 0) return;
+    if (drag.day === day && drag.hour === hour) return; // same cell — nothing to do
+    const [task] = from.splice(i, 1);
+    if (from.length === 0) delete d.entries[cellKey(drag.day, drag.hour)];
+    const k = cellKey(day, hour);
+    (d.entries[k] = d.entries[k] || []).push(task);
+    scheduleSave(); rerender();
   }
 
   function openInput(cell, day, hour, addBtn) {
@@ -239,6 +268,18 @@ export function renderPlanner(body, widget, onTitle) {
   function renderTaskRow(task, day, hour) {
     const row = document.createElement('div');
     row.className = 'todo-item planner-task';
+    row.draggable = true;
+    row.addEventListener('dragstart', (e) => {
+      dragging = { id: task.id, day, hour };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', task.text);
+      row.classList.add('dragging-item');
+    });
+    row.addEventListener('dragend', () => {
+      dragging = null;
+      row.classList.remove('dragging-item');
+      document.querySelectorAll('.planner-drop').forEach((el) => el.classList.remove('planner-drop'));
+    });
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -322,6 +363,9 @@ export function renderPlanner(body, widget, onTitle) {
     area.setSelectionRange(area.value.length, area.value.length);
   }
 }
+
+// The task currently being dragged: { id, day, hour } of its source cell.
+let dragging = null;
 
 // A single shared popup handle so a rerender or a new popup closes the old one.
 // Rerender-driven closes pass render=false to avoid recursing into rerender.

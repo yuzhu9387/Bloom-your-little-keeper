@@ -469,7 +469,15 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   padding: 4px 7px; font-size: 12px; border-radius: 8px;
 }
 /* Task row: the shared todo look, slimmed to fit a cell, single-line text. */
-.todo-item.planner-task { padding: 3px 5px; gap: 6px; font-size: 12px; border-radius: 8px; flex: 0 0 auto; }
+.todo-item.planner-task { padding: 3px 5px; gap: 6px; font-size: 12px; border-radius: 8px; flex: 0 0 auto; cursor: grab; }
+.todo-item.planner-task:active { cursor: grabbing; }
+.todo-item.planner-task.dragging-item { opacity: .4; }
+/* Cell highlighted as the drop target while dragging a task over it. */
+.planner-cell.planner-drop {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 6px;
+}
 .todo-item.planner-task .text {
   min-width: 0; flex: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
