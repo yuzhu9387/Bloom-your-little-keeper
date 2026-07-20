@@ -1,19 +1,15 @@
-// Weekly planner card: a task board over a Mon–Sun × hourly grid with two
-// views. Week shows all seven days; Day shows one day, both inside the card's
-// own frame (no fullscreen — the card keeps its size and never covers others). Every entry
-// is a task — check it to clear it from the board (kept in the data file as
+// Weekly task board: seven day columns (Mon–Sun), each a plain vertical list of
+// tasks. Check a task to clear it from the board (kept in the data file as
 // history), or hit ✕ to delete it for good. Long text is truncated to one line;
-// click it for a popup with the full, editable text.
+// click it for a popup with the full, editable text. Drag a task to reorder it
+// within a column or move it to another day.
 import { scheduleSave } from '../store.js';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const plannerDefaults = () => ({
   title: 'Weekly Plan',
-  view: 'week',       // 'week' | 'day'
-  selectedDay: todayIdx(),
-  // entries: { "day-hour": [ {id, text, done} ] }  day 0=Mon … 6=Sun
+  // entries: day-index -> ordered tasks. Keys "0".."6" (0=Mon … 6=Sun).
   entries: {}
 });
 
@@ -22,18 +18,32 @@ function uid(p) {
 }
 
 function todayIdx() { return (new Date().getDay() + 6) % 7; } // JS 0=Sun → 0=Mon
-const cellKey = (day, hour) => day + '-' + hour;
 
-// Bring older data forward: everything is a task now, so drop the `task` flag
-// and make sure the view fields exist.
+// Collapse the old "day-hour" hourly shape into per-day lists, and strip fields
+// that no longer exist. Idempotent for already-migrated (plain-integer) data.
 function migrate(d) {
-  if (d.view !== 'day') d.view = 'week';
-  if (typeof d.selectedDay !== 'number') d.selectedDay = todayIdx();
-  if (!d.entries || typeof d.entries !== 'object') d.entries = {};
+  delete d.view;
+  delete d.selectedDay;
+  if (!d.entries || typeof d.entries !== 'object') { d.entries = {}; return; }
+  const legacy = Object.keys(d.entries).some((k) => k.includes('-'));
+  if (legacy) {
+    const byDay = {};
+    Object.keys(d.entries)
+      .filter((k) => Array.isArray(d.entries[k]))
+      .sort((a, b) => {
+        const [da, ha] = a.split('-').map(Number);
+        const [db, hb] = b.split('-').map(Number);
+        return da - db || ha - hb; // group by day, ordered by hour within a day
+      })
+      .forEach((k) => {
+        const day = k.includes('-') ? k.split('-')[0] : k;
+        (byDay[day] = byDay[day] || []).push(...d.entries[k]);
+      });
+    d.entries = byDay;
+  }
   for (const k of Object.keys(d.entries)) {
-    const list = d.entries[k];
-    if (!Array.isArray(list)) { delete d.entries[k]; continue; }
-    list.forEach((e) => { delete e.task; if (typeof e.done !== 'boolean') e.done = false; });
+    if (!Array.isArray(d.entries[k])) { delete d.entries[k]; continue; }
+    d.entries[k].forEach((e) => { delete e.task; if (typeof e.done !== 'boolean') e.done = false; });
   }
 }
 
@@ -45,232 +55,137 @@ export function renderPlanner(body, widget, onTitle) {
   body.innerHTML = '';
   body.classList.add('planner-body');
 
-  const days = d.view === 'day' ? [d.selectedDay] : [0, 1, 2, 3, 4, 5, 6];
-
-  body.appendChild(buildToolbar());
-
-  const scroll = document.createElement('div');
-  scroll.className = 'planner-scroll';
-  body.appendChild(scroll);
-
-  const grid = document.createElement('div');
-  grid.className = 'planner-grid';
-  grid.style.gridTemplateColumns = `54px repeat(${days.length}, minmax(120px, 1fr))`;
-
-  const corner = document.createElement('div');
-  corner.className = 'planner-corner';
-  grid.appendChild(corner);
-  days.forEach((day) => {
-    const h = document.createElement('div');
-    h.className = 'planner-day-head';
-    h.dataset.day = day;
-    h.textContent = d.view === 'day' ? FULL_DAYS[day] : DAYS[day];
-    if (d.view === 'week') {
-      h.classList.add('clickable');
-      h.title = 'Open this day';
-      h.addEventListener('click', () => { d.selectedDay = day; d.view = 'day'; scheduleSave(); rerender(); });
-    }
-    grid.appendChild(h);
-  });
-
-  for (let hour = 0; hour < 24; hour++) {
-    const t = document.createElement('div');
-    t.className = 'planner-hour';
-    t.dataset.hour = hour;
-    t.textContent = hour + ':00';
-    grid.appendChild(t);
-    days.forEach((day) => grid.appendChild(renderCell(day, hour)));
-  }
-
-  const nowLine = document.createElement('div');
-  nowLine.className = 'planner-now-line';
-  grid.appendChild(nowLine);
-  scroll.appendChild(grid);
-
-  applyNow();
-  requestAnimationFrame(positionNowLine); // needs layout before it can measure
-
-  if (body.__nowTimer) clearInterval(body.__nowTimer);
-  body.__nowTimer = setInterval(() => {
-    if (!body.isConnected) { clearInterval(body.__nowTimer); body.__nowTimer = null; return; }
-    applyNow();
-  }, 60 * 1000);
-
-  // First open: scroll the morning into view. Rerenders keep their position.
-  if (!body.dataset.scrolled) {
-    body.dataset.scrolled = '1';
-    requestAnimationFrame(() => {
-      const row = grid.querySelector('.planner-hour[data-hour="7"]');
-      if (row) scroll.scrollTop = row.offsetTop - 34;
-    });
-  }
+  const board = document.createElement('div');
+  board.className = 'planner-board';
+  for (let day = 0; day < 7; day++) board.appendChild(renderColumn(day));
+  body.appendChild(board);
 
   function rerender() {
-    const st = scroll.scrollTop, sl = scroll.scrollLeft;
+    const cols = [...body.querySelectorAll('.board-list')].map((c) => c.scrollTop);
+    const sl = board.scrollLeft;
     renderPlanner(body, widget, onTitle);
-    const ns = body.querySelector('.planner-scroll');
-    if (ns) { ns.scrollTop = st; ns.scrollLeft = sl; }
+    body.querySelectorAll('.board-list').forEach((c, i) => { if (cols[i] != null) c.scrollTop = cols[i]; });
+    const nb = body.querySelector('.planner-board');
+    if (nb) nb.scrollLeft = sl;
   }
 
-  function buildToolbar() {
-    const bar = document.createElement('div');
-    bar.className = 'planner-toolbar';
-
-    const seg = document.createElement('div');
-    seg.className = 'planner-seg';
-    ['week', 'day'].forEach((v) => {
-      const b = document.createElement('button');
-      b.textContent = v === 'week' ? 'Week' : 'Day';
-      if (d.view === v) b.classList.add('active');
-      b.addEventListener('click', () => { if (d.view !== v) { d.view = v; scheduleSave(); rerender(); } });
-      seg.appendChild(b);
-    });
-    bar.appendChild(seg);
-
-    if (d.view === 'day') {
-      const nav = document.createElement('div');
-      nav.className = 'planner-daynav';
-      const prev = navBtn('‹', -1);
-      const label = document.createElement('span');
-      label.className = 'planner-daynav-label';
-      label.textContent = FULL_DAYS[d.selectedDay];
-      const next = navBtn('›', 1);
-      nav.append(prev, label, next);
-      bar.appendChild(nav);
-    }
-    return bar;
-  }
-
-  function navBtn(glyph, delta) {
-    const b = document.createElement('button');
-    b.className = 'planner-daynav-btn';
-    b.textContent = glyph;
-    b.addEventListener('click', () => {
-      d.selectedDay = (d.selectedDay + delta + 7) % 7;
-      scheduleSave(); rerender();
-    });
-    return b;
-  }
-
-  function applyNow() {
-    const day = todayIdx();
-    const hour = new Date().getHours();
-    grid?.querySelectorAll?.('.today, .now').forEach((el) => el.classList.remove('today', 'now'));
-    grid.querySelectorAll(`[data-day="${day}"]`).forEach((el) => el.classList.add('today'));
-    grid.querySelectorAll(`[data-hour="${hour}"]`).forEach((el) => el.classList.add('now'));
-    positionNowLine();
-  }
-
-  // Place the now-line at minute-precision over today's current-hour cell — only
-  // when today's column is actually on screen.
-  function positionNowLine() {
-    const now = new Date();
-    const day = todayIdx();
-    const cell = grid.querySelector(`.planner-cell[data-day="${day}"][data-hour="${now.getHours()}"]`);
-    if (!cell) { nowLine.style.display = 'none'; return; }
-    nowLine.style.display = 'block';
-    nowLine.style.left = cell.offsetLeft + 'px';
-    nowLine.style.width = cell.offsetWidth + 'px';
-    nowLine.style.top = (cell.offsetTop + (now.getMinutes() / 60) * cell.offsetHeight) + 'px';
-  }
-
-  function entriesAt(day, hour) {
-    const list = d.entries[cellKey(day, hour)];
+  function tasksAt(day) {
+    const list = d.entries[day];
     return Array.isArray(list) ? list : [];
   }
 
-  function deleteTask(task, day, hour) {
-    const k = cellKey(day, hour);
-    const list = entriesAt(day, hour);
+  function deleteTask(task, day) {
+    const list = tasksAt(day);
     const i = list.indexOf(task);
     if (i >= 0) list.splice(i, 1);
-    if (list.length === 0) delete d.entries[k];
+    if (list.length === 0) delete d.entries[day];
     scheduleSave(); rerender();
   }
 
-  function renderCell(day, hour) {
-    const cell = document.createElement('div');
-    cell.className = 'planner-cell';
-    cell.dataset.day = day;
-    cell.dataset.hour = hour;
+  function renderColumn(day) {
+    const col = document.createElement('div');
+    col.className = 'board-col';
+    col.dataset.day = day;
 
-    entriesAt(day, hour).forEach((task) => {
-      if (!task.done) cell.appendChild(renderTaskRow(task, day, hour));
-    });
+    const head = document.createElement('div');
+    head.className = 'board-col-head';
+    head.textContent = DAYS[day];
+    if (day === todayIdx()) head.classList.add('today');
+    col.appendChild(head);
 
-    const add = document.createElement('button');
-    add.className = 'planner-add';
-    add.textContent = '＋';
-    add.title = 'Add a task';
-    add.addEventListener('click', () => openInput(cell, day, hour, add));
-    cell.appendChild(add);
+    const list = document.createElement('div');
+    list.className = 'board-list';
+    list.dataset.day = day;
+    tasksAt(day).forEach((task) => { if (!task.done) list.appendChild(renderTaskRow(task, day)); });
 
-    // Drop target: accept a task dragged from any other cell.
-    cell.addEventListener('dragover', (e) => {
+    // Drop target: reorder within this column, or accept a task from another day.
+    list.addEventListener('dragover', (e) => {
       if (!dragging) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      cell.classList.add('planner-drop');
+      clearIndicators();
+      const ref = insertRef(list, e.clientY);
+      if (ref) ref.classList.add('drop-before'); else list.classList.add('drop-end');
     });
-    cell.addEventListener('dragleave', () => cell.classList.remove('planner-drop'));
-    cell.addEventListener('drop', (e) => {
+    list.addEventListener('dragleave', (e) => { if (!list.contains(e.relatedTarget)) clearIndicators(); });
+    list.addEventListener('drop', (e) => {
       if (!dragging) return;
       e.preventDefault();
-      cell.classList.remove('planner-drop');
-      moveTask(dragging, day, hour);
+      const ref = insertRef(list, e.clientY);
+      const beforeId = ref ? ref.dataset.taskId : null;
+      clearIndicators();
+      moveTask(dragging, day, beforeId);
       dragging = null;
     });
-    return cell;
+
+    col.appendChild(list);
+
+    col.appendChild(addRow(day));
+    return col;
   }
 
-  // Move a task from its source cell to (day, hour). Appends at the target.
-  function moveTask(drag, day, hour) {
-    const from = entriesAt(drag.day, drag.hour);
-    const i = from.findIndex((t) => t.id === drag.id);
-    if (i < 0) return;
-    if (drag.day === day && drag.hour === hour) return; // same cell — nothing to do
-    const [task] = from.splice(i, 1);
-    if (from.length === 0) delete d.entries[cellKey(drag.day, drag.hour)];
-    const k = cellKey(day, hour);
-    (d.entries[k] = d.entries[k] || []).push(task);
+  // The task row to insert before within a list (null = append at the end).
+  function insertRef(list, y) {
+    const rows = [...list.querySelectorAll('.planner-task:not(.dragging-item)')];
+    for (const r of rows) {
+      const b = r.getBoundingClientRect();
+      if (y < b.top + b.height / 2) return r;
+    }
+    return null;
+  }
+
+  function clearIndicators() {
+    board.querySelectorAll('.drop-before, .drop-end')
+      .forEach((e) => e.classList.remove('drop-before', 'drop-end'));
+  }
+
+  // Move a task to `day`, inserted before task `beforeId` (or appended). For a
+  // same-day move, `from` and `to` are the same array — reorder in place.
+  function moveTask(drag, day, beforeId) {
+    const from = tasksAt(drag.day);
+    const fi = from.findIndex((t) => t.id === drag.id);
+    if (fi < 0) return;
+    const [task] = from.splice(fi, 1);
+    const to = (d.entries[day] = tasksAt(day));
+    let at = to.length;
+    if (beforeId) { const bi = to.findIndex((t) => t.id === beforeId); if (bi >= 0) at = bi; }
+    to.splice(at, 0, task);
+    // Only a cross-day move can leave the source column empty.
+    if (String(drag.day) !== String(day) && from.length === 0) delete d.entries[drag.day];
     scheduleSave(); rerender();
   }
 
-  function openInput(cell, day, hour, addBtn) {
-    const existing = cell.querySelector('.planner-input');
-    if (existing) { existing.focus(); return; }
+  function addRow(day) {
+    const add = document.createElement('div');
+    add.className = 'planner-add-row';
     const input = document.createElement('input');
     input.className = 'planner-input';
     input.placeholder = 'New task…';
     input.spellcheck = true;
-    let closed = false;
-    const commit = () => {
-      if (closed) return;
-      closed = true;
+    const fire = () => {
       const text = input.value.trim();
-      input.remove();
       if (!text) return;
-      const k = cellKey(day, hour);
-      (d.entries[k] = d.entries[k] || []).push({ id: uid('p'), text, done: false });
+      input.value = '';
+      (d.entries[day] = tasksAt(day)).push({ id: uid('p'), text, done: false });
       scheduleSave(); rerender();
+      // keep focus in the same column's input after the rerender
+      const col = body.querySelector(`.board-col[data-day="${day}"] .planner-input`);
+      col?.focus();
     };
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') commit();
-      else if (e.key === 'Escape') { closed = true; input.remove(); }
-    });
-    input.addEventListener('blur', commit);
-    cell.insertBefore(input, addBtn);
-    input.focus();
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') fire(); });
+    add.appendChild(input);
+    return add;
   }
 
-  // Reuses the todo row look (.todo-item / .striking) but with planner behaviour:
-  // truncated text that opens a detail popup, and a ✕ that deletes for good.
-  function renderTaskRow(task, day, hour) {
+  // Reuses the todo row look (.todo-item / .striking) with board behaviour:
+  // draggable, truncated text that opens a detail popup, and a ✕ that deletes.
+  function renderTaskRow(task, day) {
     const row = document.createElement('div');
     row.className = 'todo-item planner-task';
+    row.dataset.taskId = task.id;
     row.draggable = true;
     row.addEventListener('dragstart', (e) => {
-      dragging = { id: task.id, day, hour };
+      dragging = { id: task.id, day: String(day) };
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', task.text);
       row.classList.add('dragging-item');
@@ -278,7 +193,7 @@ export function renderPlanner(body, widget, onTitle) {
     row.addEventListener('dragend', () => {
       dragging = null;
       row.classList.remove('dragging-item');
-      document.querySelectorAll('.planner-drop').forEach((el) => el.classList.remove('planner-drop'));
+      clearIndicators();
     });
 
     const cb = document.createElement('input');
@@ -297,13 +212,13 @@ export function renderPlanner(body, widget, onTitle) {
     text.className = 'text';
     text.textContent = task.text;
     text.title = task.text;
-    text.addEventListener('click', () => openDetail(row, task, day, hour));
+    text.addEventListener('click', () => openDetail(row, task, day));
 
     const del = document.createElement('button');
     del.className = 'del';
     del.textContent = '✕';
     del.title = 'Delete permanently';
-    del.addEventListener('click', () => deleteTask(task, day, hour));
+    del.addEventListener('click', () => deleteTask(task, day));
 
     row.append(cb, text, del);
     return row;
@@ -311,7 +226,7 @@ export function renderPlanner(body, widget, onTitle) {
 
   // Floating popup with the full, editable task text. Blur/Esc/outside-click
   // commits; emptying deletes the task.
-  function openDetail(anchor, task, day, hour) {
+  function openDetail(anchor, task, day) {
     closeDetail();
     const pop = document.createElement('div');
     pop.className = 'planner-popup';
@@ -340,10 +255,10 @@ export function renderPlanner(body, widget, onTitle) {
       activeDetail = null;
       const v = area.value.trim();
       if (!v) {
-        const list = entriesAt(day, hour);
+        const list = tasksAt(day);
         const i = list.indexOf(task);
         if (i >= 0) list.splice(i, 1);
-        if (list.length === 0) delete d.entries[cellKey(day, hour)];
+        if (list.length === 0) delete d.entries[day];
         scheduleSave();
         if (render) rerender();
       } else if (v !== task.text) {
@@ -364,7 +279,7 @@ export function renderPlanner(body, widget, onTitle) {
   }
 }
 
-// The task currently being dragged: { id, day, hour } of its source cell.
+// The task currently being dragged: { id, day } of its source column.
 let dragging = null;
 
 // A single shared popup handle so a rerender or a new popup closes the old one.

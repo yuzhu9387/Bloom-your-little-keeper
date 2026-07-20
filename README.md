@@ -26,7 +26,7 @@ resize them anywhere.
 | 🟠 | **Countdown** | Give it a name and a date; it shows the big number of days left (or days ago). |
 | 🟣 | **Timer** | Set minutes, hit start — it counts down `mm:ss` and rings a soft tone when it hits zero. |
 | 🌸 | **Note** | A free-form notepad with light markdown aids: `Tab` to indent, `- ` becomes a `•` bullet, `Enter` continues the list. |
-| 🔵 | **Week** | A Mon–Sun task board, one row per hour, with **Week** and single-day **Day** views. Every entry is a checkable task; a red line marks the current time. Drag a task to another time or day. Check a task to clear it from the board (kept in history) or `✕` to delete it for good. Long text shows one line — click it for a popup with the full, editable text. |
+| 🔵 | **Week** | A simple Mon–Sun task board — seven day columns, today's highlighted. Add tasks per day; drag a task to reorder it or move it to another day. Check a task to clear it from the board (kept in history) or `✕` to delete it for good. Long text shows one line — click it for a popup with the full, editable text. |
 
 Plus:
 
