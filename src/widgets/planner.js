@@ -209,7 +209,11 @@ export function renderPlanner(body, widget, onTitle) {
       const col = body.querySelector(`.board-col[data-day="${day}"] .planner-input`);
       col?.focus();
     };
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') fire(); });
+    // Ignore the Enter that confirms an IME composition (e.g. Chinese pinyin) —
+    // only a real submit Enter creates the task.
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) fire();
+    });
     add.appendChild(input);
     return add;
   }
