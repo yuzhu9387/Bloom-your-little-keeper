@@ -43,7 +43,7 @@ function mountCard(widget) {
     widget.data.title = title.value.trim() || defaultName;
     scheduleSave();
   });
-  title.addEventListener('keydown', (e) => { if (e.key === 'Enter') title.blur(); });
+  title.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) title.blur(); });
   title.addEventListener('blur', () => {
     if (!title.value.trim()) { title.value = defaultName; title.size = defaultName.length; }
   });

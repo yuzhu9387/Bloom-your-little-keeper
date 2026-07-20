@@ -250,7 +250,7 @@ export function renderTodo(body, widget, onTitle) {
     input.placeholder = placeholder;
     input.spellcheck = true;
     const fire = () => { const t = input.value.trim(); if (!t) return; input.value = ''; onAdd(t); };
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') fire(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) fire(); });
     const btn = document.createElement('button');
     btn.textContent = 'Add';
     btn.className = 'add-btn';
@@ -296,7 +296,7 @@ export function renderTodo(body, widget, onTitle) {
       folder.name = name.value.trim() || 'Project';
       scheduleSave();
     });
-    name.addEventListener('keydown', (e) => { if (e.key === 'Enter') name.blur(); });
+    name.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) name.blur(); });
 
     const count = document.createElement('span');
     count.className = 'folder-count';

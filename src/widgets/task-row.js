@@ -23,7 +23,7 @@ export function renderTaskRow(task, { onToggle, onEdit, onDelete, extraClass = '
   text.textContent = task.text;
   text.contentEditable = 'plaintext-only';
   text.spellcheck = true;
-  text.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); text.blur(); } });
+  text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); text.blur(); } });
   text.addEventListener('blur', () => {
     const v = text.textContent.trim();
     if (!v) onDelete();
