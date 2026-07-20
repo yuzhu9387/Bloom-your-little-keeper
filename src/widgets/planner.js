@@ -118,9 +118,8 @@ export function renderPlanner(body, widget, onTitle) {
       dragging = null;
     });
 
-    col.appendChild(list);
-
     col.appendChild(addRow(day));
+    col.appendChild(list);
     return col;
   }
 
@@ -166,7 +165,7 @@ export function renderPlanner(body, widget, onTitle) {
       const text = input.value.trim();
       if (!text) return;
       input.value = '';
-      (d.entries[day] = tasksAt(day)).push({ id: uid('p'), text, done: false });
+      (d.entries[day] = tasksAt(day)).unshift({ id: uid('p'), text, done: false });
       scheduleSave(); rerender();
       // keep focus in the same column's input after the rerender
       const col = body.querySelector(`.board-col[data-day="${day}"] .planner-input`);
