@@ -10,7 +10,9 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const plannerDefaults = () => ({
   title: 'Weekly Plan',
   // entries: day-index -> ordered tasks. Keys "0".."6" (0=Mon … 6=Sun).
-  entries: {}
+  entries: {},
+  // colWidths: day-index -> px width override (unset = default flex width).
+  colWidths: {}
 });
 
 function uid(p) {
@@ -24,6 +26,7 @@ function todayIdx() { return (new Date().getDay() + 6) % 7; } // JS 0=Sun → 0=
 function migrate(d) {
   delete d.view;
   delete d.selectedDay;
+  if (!d.colWidths || typeof d.colWidths !== 'object') d.colWidths = {}; // per-day px overrides
   if (!d.entries || typeof d.entries !== 'object') { d.entries = {}; return; }
   const legacy = Object.keys(d.entries).some((k) => k.includes('-'));
   if (legacy) {
@@ -86,6 +89,8 @@ export function renderPlanner(body, widget, onTitle) {
     const col = document.createElement('div');
     col.className = 'board-col';
     col.dataset.day = day;
+    const w = d.colWidths[day];
+    if (w) col.style.flex = `0 0 ${w}px`; // an explicit width pins the column
 
     const head = document.createElement('div');
     head.className = 'board-col-head';
@@ -120,7 +125,40 @@ export function renderPlanner(body, widget, onTitle) {
 
     col.appendChild(addRow(day));
     col.appendChild(list);
+
+    const grip = document.createElement('div');
+    grip.className = 'col-resize';
+    grip.title = 'Drag to resize column';
+    grip.addEventListener('pointerdown', (e) => startColResize(e, col, day));
+    col.appendChild(grip);
     return col;
+  }
+
+  // Drag a column's right edge to set its width; persisted per day. No rerender
+  // during the drag so the grip stays alive — the width is applied live.
+  function startColResize(e, col, day) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const grip = e.currentTarget;
+    try { grip.setPointerCapture(e.pointerId); } catch { /* capture optional */ }
+    const startX = e.clientX;
+    const baseW = col.getBoundingClientRect().width;
+    let curW = baseW;
+    // Listen on window so the drag keeps tracking even if the pointer leaves the
+    // thin grip; capture (above) retargets too, this is the reliable fallback.
+    const move = (ev) => {
+      curW = Math.max(100, baseW + (ev.clientX - startX));
+      col.style.flex = `0 0 ${curW}px`;
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      d.colWidths[day] = Math.round(curW);
+      scheduleSave();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
   }
 
   // The task row to insert before within a list (null = append at the end).

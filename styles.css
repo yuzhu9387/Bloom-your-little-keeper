@@ -377,11 +377,20 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .planner-board::-webkit-scrollbar-thumb { background: rgba(150,120,160,.28); border-radius: 8px; }
 
 .board-col {
-  flex: 1 0 130px; min-width: 130px;
+  position: relative;
+  flex: 1 0 130px; min-width: 100px;
   display: flex; flex-direction: column; min-height: 0;
   border-right: 1px solid rgba(120,100,140,.10);
 }
 .board-col:last-child { border-right: none; }
+/* Drag the right edge to resize the column. */
+.col-resize {
+  position: absolute; top: 0; right: -3px; z-index: 4;
+  width: 7px; height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+.col-resize:hover { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 .board-col-head {
   flex: 0 0 auto;
   font-size: 12px; font-weight: 700; color: var(--muted);
